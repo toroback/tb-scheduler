@@ -12,6 +12,7 @@
     "type" : "git",
     "url" : "https://github.com/toroback/tb-scheduler.git"
   },
+  "keywords" : ["toroback", "backend", "scheduler"],
   "dependencies": {
     "mongoose": "^4.9.5",
     "node-schedule": "^1.2.1"
