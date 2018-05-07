@@ -57,7 +57,8 @@ let curPath  = process.cwd();
 └───────────────────────── second (0 - 59, OPTIONAL)
  */
 
- let log;
+let App;
+let log;
 
  var codigo = function(){
     var a = 0;
@@ -86,59 +87,15 @@ let curPath  = process.cwd();
  class tbScheduler {
   constructor(tb) { //Esto tenemos que analizar bien ya que no devuelve nada ni espera por nadie asi que tendremos que pasarlo al init.
     this.ver = '1.0.0'; //Sacarlo del package.json
-    this.App = tb;
+    // this.App = tb;
     this.status = 0;
-    log = this.App.log.child({module:'Scheduler'});
+    // log = this.App.log.child({module:'Scheduler'});
 
     // console.log("\n-----------------\n");
 
     // console.log(curPath);    
     // console.log(__dirname);
     // console.log("-----------------\n");
-    
-
-    let Scheduler     = App.db.setModel('tb.scheduler',rscPath + '/tb.scheduler-schema');
-    let SchedulerJob  = App.db.setModel('tb.scheduler.job',rscPath + '/tb.scheduler.jobs-schema');
-
-    this.SchedulerJob = SchedulerJob;
-    Scheduler.findOne({'_id':'stat'}).then(doc=>{
-      if(doc){
-        if (doc.version == this.ver){
-          //Verificamos si quedo prendido de alguna forma y se hace manteniemiento
-          log.info("Scheduler current version "+ doc.version)
-          doc.status = (doc.status)?1:0;
-          doc.save();
-          if(doc.status){
-            this.statDoc = doc;
-            this.status = 1
-            this.start();             
-          }
-         
-        }
-      }else{
-        log.info("no hay doc deberiamos crear uno")
-        let newScheduler = new Scheduler();
-        newScheduler._id = "stat";
-        newScheduler.status = 1;
-        newScheduler.version = this.ver;
-        newScheduler.save();
-        this.statDoc = newScheduler;
-
-        systemJobs(SchedulerJob).
-        then(()=>{
-          console.log("##########");
-          this.status = 1;
-          this.start();          
-        })
-      }
-
-    })
-    .catch(err=>{
-      console.log(err);
-    })
-
-
-
     
     // App._model['tb.scheduler'] = that.dbMongo.model('a2s.user',userSchema);
 
@@ -194,7 +151,8 @@ let curPath  = process.cwd();
                 //Ejecuta la función de un módulo
                 log.trace(`scheduler module`)
                 log.info(`Run module ${job._id}`)
-                let wmodule = require(curPath + job.job.module);
+                // let wmodule = require(curPath + job.job.module);
+                let wmodule = require(curPath + '/app/scheduler/' + job.job.module);
                 wmodule[job.job.function]()
                 .then((doc) => {
                   log.info(doc);
@@ -236,7 +194,90 @@ let curPath  = process.cwd();
   }
   stop(){
     console.log("stop");
-  }  
+  }
+
+  _init( ) {
+    return new Promise( (resolve, reject) => {
+      // new tbScheduler
+      // App.db.setModel('tb.payments-transaction',rscPath + '/tb.payments-transaction');
+      // App.db.setModel('tb.payments-register',rscPath + '/tb.payments-register');
+
+      let Scheduler     = App.db.setModel('tb.scheduler',rscPath + '/tb.scheduler-schema');
+      let SchedulerJob  = App.db.setModel('tb.scheduler.job',rscPath + '/tb.scheduler.jobs-schema');
+
+      this.SchedulerJob = SchedulerJob;
+      Scheduler.findOne({'_id':'stat'}).then(doc=>{
+        if(doc){
+          if (doc.version == this.ver){
+            //Verificamos si quedo prendido de alguna forma y se hace manteniemiento
+            log.info("Scheduler current version "+ doc.version)
+            doc.status = (doc.status)?1:0;
+            doc.save();
+            if(doc.status){
+              this.statDoc = doc;
+              this.status = 1
+              this.start();             
+            }
+           
+          }
+        }else{
+          log.info("no hay doc deberiamos crear uno")
+          let newScheduler = new Scheduler();
+          newScheduler._id = "stat";
+          newScheduler.status = 1;
+          newScheduler.version = this.ver;
+          newScheduler.save();
+          this.statDoc = newScheduler;
+
+          systemJobs(SchedulerJob).
+          then(()=>{
+            console.log("##########");
+            this.status = 1;
+            this.start();          
+          })
+        }
+      })
+      .then(resolve)
+      .catch(reject)
+    });
+  }
+
+  /**
+   * Setup del módulo. Debe ser llamado antes de crear una instancia
+   * @param {Object} _app Objeto App del servidor
+   * @return {Promise} Una promesa
+   */
+  static setup(app){
+    return new Promise((resolve,reject)=>{
+      App = app;
+      log = App.log.child({module:'scheduler'});
+
+      log.debug("iniciando Módulo Scheduler");
+
+      // require("./routes")(app);
+    
+      resolve();
+
+    });
+  }
+
+  /**
+   * Inicializa los modelos del módulo - arranca el servicio de cron
+   * @return {Promise} Una promesa
+   */
+  // static init(){
+  static init(){
+    return new Promise( (resolve, reject) => {
+      // new tbScheduler
+      // App.db.setModel('tb.payments-transaction',rscPath + '/tb.payments-transaction');
+      // App.db.setModel('tb.payments-register',rscPath + '/tb.payments-register');
+
+      let scheduler = new tbScheduler( );
+      scheduler._init()
+      .then(resolve)
+      .catch(reject)
+    });
+  }
 
 }
 
