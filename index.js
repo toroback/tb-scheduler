@@ -3,7 +3,7 @@ let path     = require('path');
 
 let rscPath  = __dirname +'/resources';
 let curPath  = process.cwd();
-
+let basePath = curPath + '/app/scheduler/';
 
 /**
  * Módulo para el manejo de procesos scheduler
@@ -152,8 +152,8 @@ let log;
                 log.trace(`scheduler module`)
                 log.info(`Run module ${job._id}`)
                 // let wmodule = require(curPath + job.job.module);
-                let wmodule = require(curPath + '/app/scheduler/' + job.job.module);
-                wmodule[job.job.function]()
+                let wmodule = require(basePath + job.job.module);
+                wmodule[job.job.function]( ...job.job.args )
                 .then((doc) => {
                   log.info(doc);
                   log.trace('scheduler response');
